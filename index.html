@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>za vas 💙</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Caveat:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --W: 320px;
+      --H: 220px;
+      --flap: 110px;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #dff0ff 0%, #b8d8f8 30%, #88bef5 60%, #5a9ee0 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Press Start 2P', monospace;
+      overflow: hidden;
+      position: relative;
+      cursor: default;
+    }
+
+    /* scanlines */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.025) 3px, rgba(0,0,0,0.025) 4px);
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* stars */
+    .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .star {
+      position: absolute; width: 6px; height: 6px; background: white; opacity: 0;
+      animation: twinkle var(--d) ease-in-out infinite;
+      animation-delay: var(--delay);
+    }
+    @keyframes twinkle {
+      0%,100% { opacity: 0; transform: scale(1); }
+      50%      { opacity: 0.55; transform: scale(1.6); }
+    }
+
+    /* score bar */
+    .score-bar {
+      position: fixed; top: 16px; left: 0; right: 0;
+      display: flex; justify-content: space-between;
+      padding: 0 20px; font-size: 8px; color: #2a6ab5;
+      z-index: 10; letter-spacing: 1px; opacity: 0.7;
+    }
+
+    /* stage */
+    .stage {
+      position: relative; z-index: 5;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 28px;
+    }
+
+    .hint {
+      font-family: 'Caveat', cursive;
+      font-size: 20px; color: #2a6ab5; opacity: 0.85;
+      animation: bob 2s ease-in-out infinite;
+      transition: opacity 0.4s;
+    }
+    .hint.hide { opacity: 0; pointer-events: none; }
+    @keyframes bob {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-5px); }
+    }
+
+    /* ══════════════════════════
+       ENVELOPE
+    ══════════════════════════ */
+    .envelope-wrap {
+      position: relative;
+      width: var(--W); height: var(--H);
+      cursor: pointer;
+      filter: drop-shadow(0 10px 30px rgba(60,120,220,.3));
+      transition: transform .15s, filter .6s ease .2s;
+      -webkit-tap-highlight-color: transparent;
+      perspective: 600px;
+    }
+    .envelope-wrap:hover  { transform: scale(1.04); }
+    .envelope-wrap:active { transform: scale(0.97); }
+
+    /* body */
+    .env-body {
+      position: absolute; bottom: 0; left: 0;
+      width: var(--W); height: calc(var(--H) - 20px);
+      background: #e8f4ff;
+      border: 3px solid #5a9ee0;
+      border-radius: 0 0 10px 10px;
+    }
+    /* bottom V */
+    .env-body::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 80px;
+      background:
+        linear-gradient(135deg, transparent 50%, #cce4ff 50%),
+        linear-gradient(225deg, transparent 50%, #cce4ff 50%);
+      background-size: 160px 80px;
+      background-position: 0 0, 160px 0;
+      background-repeat: no-repeat;
+    }
+    /* side triangles */
+    .env-body::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: calc(var(--H) - 20px);
+      background:
+        linear-gradient(to bottom right, #d4ecff 50%, transparent 50%) no-repeat left top / 50% 100%,
+        linear-gradient(to bottom left,  #d4ecff 50%, transparent 50%) no-repeat right top / 50% 100%;
+    }
+
+    /* flap (3-D flip) */
+    .env-flap {
+      position: absolute; top: 0; left: 0;
+      width: var(--W); height: var(--flap);
+      transform-origin: top center;
+      transform: rotateX(0deg);
+      transition: transform 0.65s cubic-bezier(.4,0,.2,1);
+      z-index: 4;
+    }
+    .env-flap svg { display: block; }
+    .envelope-wrap.opened .env-flap {
+      transform: rotateX(180deg);
+    }
+
+    /* dims when opened */
+    .envelope-wrap.opened {
+      cursor: default;
+      pointer-events: none;
+      filter: drop-shadow(0 6px 16px rgba(60,120,220,.15)) brightness(0.82) blur(1.5px);
+      transform: scale(0.78) translateY(38px) !important;
+    }
+
+    /* ══════════════════════════
+       LETTER OVERLAY
+    ══════════════════════════ */
+    .letter-overlay {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    .letter-card {
+      background: rgba(255,255,255,0.96);
+      border: 3px solid #5a9ee0;
+      border-radius: 12px;
+      padding: 40px 36px 36px;
+      width: min(84vw, 350px);
+      box-shadow:
+        0 24px 70px rgba(60,120,220,.22),
+        0 0 0 6px rgba(200,230,255,.6),
+        0 0 0 10px rgba(170,208,245,.3);
+      text-align: center;
+      transform: scale(0.4) translateY(80px);
+      opacity: 0;
+      transition: transform 0.6s cubic-bezier(.34,1.56,.64,1), opacity 0.3s ease;
+      pointer-events: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* lined paper */
+    .letter-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent, transparent 30px,
+        #c8e6ff44 30px, #c8e6ff44 31px
+      );
+      pointer-events: none;
+    }
+
+    /* top corner fold */
+    .letter-card::after {
+      content: '';
+      position: absolute; top: 0; right: 0;
+      width: 0; height: 0;
+      border-style: solid;
+      border-width: 0 28px 28px 0;
+      border-color: transparent #aad0f5 transparent transparent;
+    }
+
+    .letter-card.show {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .letter-greeting {
+      font-family: 'Caveat', cursive;
+      font-size: clamp(22px, 6vw, 28px);
+      color: #1a5aaa;
+      line-height: 1.5;
+      position: relative; z-index: 1;
+    }
+
+    .letter-love {
+      margin-top: 22px;
+      font-family: 'Caveat', cursive;
+      font-size: clamp(26px, 7vw, 34px);
+      color: #3a7fd4;
+      position: relative; z-index: 1;
+    }
+
+    .letter-sign {
+      margin-top: 18px;
+      font-family: 'Caveat', cursive;
+      font-size: clamp(18px, 4.5vw, 22px);
+      color: #5a9ee0;
+      position: relative; z-index: 1;
+    }
+
+    /* ── pixel burst ── */
+    .burst-container { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
+    .pixel { position: absolute; width: 10px; height: 10px; border-radius: 1px; opacity: 0; }
+    .pixel.go { animation: pixelFly var(--pd) ease-out forwards; }
+    @keyframes pixelFly {
+      0%   { opacity: 1; transform: translate(0,0) scale(1); }
+      100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.2); }
+    }
+
+    /* hearts */
+    .heart-rain { position: fixed; inset: 0; pointer-events: none; z-index: 55; }
+    .heart {
+      position: absolute; top: -40px; opacity: 0;
+      animation: fall var(--hd) ease-in forwards;
+      animation-delay: var(--hdelay);
+    }
+    @keyframes fall {
+      0%   { opacity: 1; transform: translateY(0) rotate(var(--rot)); }
+      100% { opacity: 0; transform: translateY(110vh) rotate(calc(var(--rot) + 360deg)); }
+    }
+
+    /* score pop */
+    .score-pop {
+      position: fixed; font-size: 10px;
+      color: #fff; text-shadow: 2px 2px #2a6ab5;
+      pointer-events: none; z-index: 70; opacity: 0;
+    }
+    .score-pop.show { animation: scoreFly 1.4s ease-out forwards; }
+    @keyframes scoreFly {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      80%  { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-80px) scale(1.4); }
+    }
+
+    /* flash */
+    .flash { position: fixed; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 80; }
+    .flash.go { animation: flashAnim 0.35s ease-out forwards; }
+    @keyframes flashAnim {
+      0%   { opacity: 0.65; }
+      100% { opacity: 0; }
+    }
+
+    @media (max-width: 400px) {
+      :root { --W: 270px; --H: 185px; --flap: 93px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="stars" id="stars"></div>
+  <div class="burst-container" id="burst"></div>
+  <div class="heart-rain" id="hearts"></div>
+  <div class="flash" id="flash"></div>
+
+  <div class="score-bar">
+    <span id="scoreVal">SCORE: 0</span>
+    <span>LIVES ♥♥♥</span>
+  </div>
+
+  <div class="stage">
+    <p class="hint" id="hint">— tap the envelope —</p>
+
+    <div class="envelope-wrap" id="envelope" onclick="openEnvelope(this)">
+      <div class="env-body"></div>
+      <div class="env-flap">
+        <svg width="320" height="110" viewBox="0 0 320 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="0,0 320,0 160,100" fill="#cce4ff" stroke="#5a9ee0" stroke-width="3" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- letter pops out as overlay -->
+  <div class="letter-overlay" id="letterOverlay">
+    <div class="letter-card" id="letterCard">
+      <p class="letter-greeting">Petko, Dundalina<br>&amp; Yanichka,</p>
+      <p class="letter-love">obicham vi 💙</p>
+      <p class="letter-sign">— G</p>
+    </div>
+  </div>
+
+  <div class="score-pop" id="scorePop">+1000 PTS!</div>
+
+  <script>
+    // stars
+    const starsEl = document.getElementById('stars');
+    for (let i = 0; i < 45; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${1.5+Math.random()*3}s;--delay:${Math.random()*5}s`;
+      starsEl.appendChild(s);
+    }
+
+    // pixel burst
+    const colors = ['#b8d8ff','#7ab8f5','#ffffff','#5a9ee0','#aad0f5','#e8f4ff','#ffeaf4','#ffe0f0'];
+    function spawnPixels(cx, cy) {
+      const burst = document.getElementById('burst');
+      for (let i = 0; i < 80; i++) {
+        const p = document.createElement('div');
+        p.className = 'pixel';
+        const angle = Math.random() * Math.PI * 2;
+        const dist  = 60 + Math.random() * 240;
+        p.style.cssText = `left:${cx}px;top:${cy}px;background:${colors[Math.floor(Math.random()*colors.length)]};--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;--pd:${0.45+Math.random()*0.9}s;`;
+        burst.appendChild(p);
+        setTimeout(() => p.classList.add('go'), 10);
+        setTimeout(() => p.remove(), 1800);
+      }
+    }
+
+    // hearts
+    function spawnHearts() {
+      const c = document.getElementById('hearts');
+      const emojis = ['💙','🩵','✨','⭐','💫','🌟','💌'];
+      for (let i = 0; i < 40; i++) {
+        const h = document.createElement('div');
+        h.className = 'heart';
+        h.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+        h.style.cssText = `left:${Math.random()*100}%;font-size:${14+Math.random()*20}px;--hd:${1.8+Math.random()*2.4}s;--hdelay:${Math.random()*1.5}s;--rot:${Math.random()*30-15}deg;`;
+        c.appendChild(h);
+        setTimeout(() => h.remove(), 5500);
+      }
+    }
+
+    // score pop
+    function showScore(cx, cy) {
+      const el = document.getElementById('scorePop');
+      el.style.left = (cx - 55) + 'px';
+      el.style.top  = (cy - 50) + 'px';
+      el.classList.remove('show');
+      void el.offsetWidth;
+      el.classList.add('show');
+    }
+
+    // main open
+    let opened = false;
+    function openEnvelope(el) {
+      if (opened) return;
+      opened = true;
+
+      document.getElementById('hint').classList.add('hide');
+      document.getElementById('flash').classList.add('go');
+
+      const rect = el.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top  + rect.height / 2;
+
+      // open flap + shrink envelope to bg
+      el.classList.add('opened');
+
+      // after flap animation — pop letter
+      setTimeout(() => {
+        spawnPixels(cx, cy);
+        spawnHearts();
+        showScore(cx, cy);
+        document.getElementById('letterCard').classList.add('show');
+        document.getElementById('scoreVal').textContent = 'SCORE: 1000';
+      }, 600);
+
+      // screen shake
+      document.body.style.transition = 'transform .05s';
+      [[-5,3],[5,-3],[-4,-4],[4,4],[0,0]].forEach((s,i) => {
+        setTimeout(() => {
+          document.body.style.transform = `translate(${s[0]}px,${s[1]}px)`;
+        }, i * 55);
+      });
+    }
+  </script>
+</body>
+</html>
