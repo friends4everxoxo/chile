@@ -263,8 +263,58 @@
       100% { opacity: 0; }
     }
 
+    /* ── friend buttons ── */
+    .friend-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.5s ease 0.3s, transform 0.5s ease 0.3s;
+      pointer-events: none;
+    }
+    .friend-buttons.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+    .friend-btn {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+      padding: 10px 14px;
+      border: 2px solid #5a9ee0;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.85);
+      color: #2a6ab5;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      box-shadow: 0 3px 10px rgba(90,158,224,.2), 3px 3px 0 #5a9ee0;
+      transition: transform .1s, box-shadow .1s;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .friend-btn:hover  { transform: translate(-1px,-1px); box-shadow: 0 3px 10px rgba(90,158,224,.2), 4px 4px 0 #5a9ee0; }
+    .friend-btn:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 #5a9ee0; }
+
+    /* emoji rain */
+    .emoji-rain { position: fixed; inset: 0; pointer-events: none; z-index: 56; }
+    .erain {
+      position: absolute; top: -50px; opacity: 0;
+      animation: efall var(--ed) ease-in forwards;
+      animation-delay: var(--edelay);
+      user-select: none;
+    }
+    @keyframes efall {
+      0%   { opacity: 1; transform: translateY(0) rotate(var(--erot)) scale(1); }
+      80%  { opacity: 1; }
+      100% { opacity: 0; transform: translateY(110vh) rotate(calc(var(--erot) + 540deg)) scale(0.6); }
+    }
+
     @media (max-width: 400px) {
       :root { --W: 270px; --H: 185px; --flap: 93px; }
+      .friend-btn { font-size: 8px; padding: 9px 11px; }
     }
   </style>
 </head>
@@ -273,6 +323,7 @@
   <div class="stars" id="stars"></div>
   <div class="burst-container" id="burst"></div>
   <div class="heart-rain" id="hearts"></div>
+  <div class="emoji-rain" id="emojiRain"></div>
   <div class="flash" id="flash"></div>
 
   <div class="score-bar">
@@ -299,6 +350,11 @@
       <p class="letter-greeting">Petko, Dundalina<br>&amp; Yanichka,</p>
       <p class="letter-love">obicham vi 💙</p>
       <p class="letter-sign">— G</p>
+      <div class="friend-buttons" id="friendBtns">
+        <button class="friend-btn" onclick="rainEmojis('petko')">Petko</button>
+        <button class="friend-btn" onclick="rainEmojis('daniela')">Daniela</button>
+        <button class="friend-btn" onclick="rainEmojis('yani')">Yani</button>
+      </div>
     </div>
   </div>
 
@@ -458,6 +514,7 @@
         showScore(cx, cy);
         launchConfetti();
         document.getElementById('letterCard').classList.add('show');
+        setTimeout(() => document.getElementById('friendBtns').classList.add('show'), 400);
         document.getElementById('scoreVal').textContent = 'SCORE: 1000';
       }, 600);
 
@@ -468,6 +525,25 @@
           document.body.style.transform = `translate(${s[0]}px,${s[1]}px)`;
         }, i * 55);
       });
+    }
+    // emoji rain
+    const emojiSets = {
+      petko:   ['💩','💩','💩','💩','🚽','😂','💀'],
+      daniela: ['🚗','🚙','🚕','🏎️','🚓','🛻','🚐'],
+      yani:    ['🎨','🖌️','🖥️','✏️','🎭','🖼️','💻']
+    };
+
+    function rainEmojis(who) {
+      const container = document.getElementById('emojiRain');
+      const set = emojiSets[who];
+      for (let i = 0; i < 50; i++) {
+        const e = document.createElement('div');
+        e.className = 'erain';
+        e.textContent = set[Math.floor(Math.random() * set.length)];
+        e.style.cssText = `left:${Math.random()*100}%;font-size:${18+Math.random()*22}px;--ed:${1.4+Math.random()*2}s;--edelay:${Math.random()*1.2}s;--erot:${Math.random()*40-20}deg;`;
+        container.appendChild(e);
+        setTimeout(() => e.remove(), 4500);
+      }
     }
   </script>
 </body>
